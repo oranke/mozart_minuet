@@ -1,15 +1,16 @@
 # Mozart Dice Game
 
-Delphi implementation of "Mozart Dice Game".
+Delphi implementation of "Mozart Dice Game".  
+http://oranke.tistory.com/265
 
-![Mozart](.\Image\mozart.jpg)
+![Mozart](./Image/mozart.jpg)
 
 
 You can create and play your own Minuet simply.  
 
 
 All datas and rules are referennced in [here](http://sunsite.univie.ac.at/Mozart/dice/).  
-MIDI Play source comes from [silhwan's blog](http://blog.naver.com/silhwan5125/100181331126) (korean).
+MIDI Play source comes from [silhwan's blog](http://blog.naver.com/silhwan5125/100181331126).
 
 
 ---
