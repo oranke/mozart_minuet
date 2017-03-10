@@ -356,7 +356,7 @@ var
   {$if CompilerVersion > 21} // Delphi XE or later
   testDeviceID: UInt_Ptr;
   {$else}
-  testDeviceID: Integer;
+  testDeviceID: UINT;
   {$ifend}
   i: integer;
   testProductName: string;
@@ -370,6 +370,8 @@ begin
   machine. The FProductname property will still be set by SetDeviceID }
     if not (csLoading in ComponentState) then
     begin
+      testDeviceID := MIDI_MAPPER;
+
     { Loop uses -1 to test for MIDI_MAPPER as well }
       for i := -1 to (midioutGetNumDevs - 1) do
       begin

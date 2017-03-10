@@ -1,4 +1,4 @@
-{ TMidiFile2
+﻿{ TMidiFile2
 
  The component for MIDI File Reader.
  You can get various information of MIDI file such as format type, number of tracks, playback
@@ -288,7 +288,7 @@ var
   FileID: TFileID;
   TrackID: TFileID;
   buf: array[1..4] of byte;
-  TrackDataSize: integer;
+  //TrackDataSize: integer;
   I, N1: integer;
   DeltaTime: LongWord;
   Tempo: LongWord;
@@ -457,10 +457,11 @@ var
 
 begin
   { Get info from file }
-  Result := false;
+  //Result := false;
   //SourceStream := nil;
 
   try
+    Result := false;
 
    {$IFNDEF UNICODE}
     //SourceStream := TTntFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
@@ -509,7 +510,7 @@ begin
       Info.TrackList.Add(MidiTrack); // Add to track list
 
       SourceStream.Read(buf, 4);     // Read Track size
-      TrackDataSize := (buf[1] shl 24) + (buf[2] shl 16) + (buf[3] shl 8) + buf[4];
+      //TrackDataSize := (buf[1] shl 24) + (buf[2] shl 16) + (buf[3] shl 8) + buf[4];
 
     //  Info.TrackNames[I] := '';
       EndOfTrack := false;
