@@ -9,6 +9,9 @@ uses
 
 {$R *.res}
 
+{$R Res_Minuet.RES}
+{$R Res_Trio.RES}
+
 begin
   ReportMemoryLeaksOnShutdown := true;
 
