@@ -92,6 +92,9 @@ type
     destructor Destroy; override;
     procedure AddEvent(Event: PMidiEvent);
     function GetEvent(Index: Integer): PMidiEvent;
+
+    // oranke가 임시
+    procedure DeleteEvent(Index: Integer; StubOnly: Boolean = false);
    // function GetChannels(Index: Integer): Boolean;
   published
     property Active: Boolean read FActive write FActive;
@@ -103,6 +106,9 @@ type
     property Copyright: AnsiString read FCopyright;
     property Instrument: AnsiString read FInstrument;
     property EventCount: Integer read GetEventCount;
+
+    // oranke가 임시 추가. 
+    //property EventList: TList read FEventList;
   end;
 
   TMidiFileInfo = record
@@ -138,6 +144,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    function ReadFromStream(Stream: TStream): Boolean; { Load data }
     function ReadFromFile(const FileName: WideString): Boolean; { Load data }
     property Valid: Boolean read FIsValid;          { True if file valid }
     property Format: Word read FFormat;             { 0: single-track, 1: multiple tracks, synchronous, 2: multiple tracks, asynchronous }
@@ -147,8 +154,10 @@ type
     property TempoCount: word read FTempoCount;     { Number of tempos }
     function GetTrack(Index: Integer): TMidiTrack;  { Gets an item of TMidiTrack }
     function GetTempo(Index: Integer): PTempoData;  { Gets an item of tempo data }
-    property Duration: LongWord read FDuration;        { Play length in milliseconds }
-    property PlayTicks: LongWord read FPlayTicks;      { Play length in ticks }
+    property Duration: LongWord read FDuration //;        { Play length in milliseconds }
+      write FDuration;
+    property PlayTicks: LongWord read FPlayTicks //;      { Play length in ticks }
+      write FPlayTicks;
     property LyricsTrack: Integer read FLyricsTrack;   { The track where lyrics is recorded }
     property Lyrics: AnsiString read FLyrics;          { The plain lyrics text }
     property SyncLyrics: TRawLyrics read GetSyncLyrics;   { The sync lyrics data }
@@ -243,6 +252,17 @@ begin
     Result := nil;
 end;
 
+procedure TMidiTrack.DeleteEvent(Index: Integer; StubOnly: Boolean);
+begin
+  if (Index >= 0) and (Index < FEventList.Count) then
+  begin
+    if not StubOnly then
+      Dispose(PMidiEvent(FEventList[Index]));
+    FEventList.Delete(Index);
+  end;
+
+end;
+
 function TMidiTrack.GetEventCount: Integer;
 begin
   Result := FEventList.Count;
@@ -254,13 +274,16 @@ begin
   Result := FChannels[Index];
 end; }
 
-function GetInfo(const FileName: UnicodeString; var Info: TMidiFileInfo): Boolean;
+function GetInfo(SourceStream: TStream; var Info: TMidiFileInfo): Boolean; overload;
+//function GetInfo(const FileName: UnicodeString; var Info: TMidiFileInfo): Boolean; overload;
 var
+
   {$IFNDEF UNICODE}
-  SourceFile: TTntFileStream;
+  //SourceFile: TTntFileStream;
   {$ELSE}
-  SourceFile: TFileStream;
+  //SourceFile: TFileStream;
   {$ENDIF}
+  //SourceStream: TStream;
 
   FileID: TFileID;
   TrackID: TFileID;
@@ -302,9 +325,9 @@ var
 
    for n := 0 to 4 do
    begin
-    if SourceFile.Position >= (SourceFile.Size - 1) then
+    if SourceStream.Position >= (SourceStream.Size - 1) then
       break;
-    SourceFile.Read(b, 1);
+    SourceStream.Read(b, 1);
    { if (b = $FF) then
       break; }
     inc(Len_);
@@ -358,13 +381,13 @@ var
  // $C0 : Program change,  $D0 : Channel after touch,  $E0 : Pitch wheel change
    case MessageType of
      $80, $90, $A0, $B0, $E0 : begin
-             SourceFile.Read(ChanData, 2);
+             SourceStream.Read(ChanData, 2);
              pEvent^.Data1 := ChanData[1];
              pEvent^.Data2 := ChanData[2];
            end;
 
      $C0, $D0 : begin
-             SourceFile.Read(ChanData, 1);
+             SourceStream.Read(ChanData, 1);
              pEvent^.Data1 := ChanData[1];
            end;
    end;
@@ -381,7 +404,7 @@ var
    str2: AnsiString;
  begin
    { DataType  Description
-        0      Set track��s sequence #
+        0      Set track’s sequence #
       $01      User Text
       $02      Copyright info.
       $03      Track name
@@ -400,10 +423,10 @@ var
       $7f      Sequencer specific
      end; }
 
-   SourceFile.Read(DataType, 1);  // Read type code of Meta event
+   SourceStream.Read(DataType, 1);  // Read type code of Meta event
    DataBytes_ := GetDelta(Len2);  // Read the length of data
    SetLength(str2, DataBytes_);
-   SourceFile.Read(str2[1], DataBytes_); // Read text
+   SourceStream.Read(str2[1], DataBytes_); // Read text
    if DataType = $2f then        // End of Track ?
      EndOfTrack := true
    else if DataType = $51 then  // Set tempo
@@ -435,30 +458,32 @@ var
 begin
   { Get info from file }
   Result := false;
-  SourceFile := nil;
+  //SourceStream := nil;
 
   try
+
    {$IFNDEF UNICODE}
-    SourceFile := TTntFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+    //SourceStream := TTntFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
    {$ELSE}
-    SourceFile := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+    //SourceStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
    {$ENDIF}
-    Info.FileSize := SourceFile.Size;
-    SourceFile.Read(FileID, 4); // Read File ID. (should be 'MThd')
+   
+    Info.FileSize := SourceStream.Size;
+    SourceStream.Read(FileID, 4); // Read File ID. (should be 'MThd')
     if FileID <> MIDI_ID then
-      Raise_Exception('File has invalid MIDI Header ID.'#13#10#13#10 + ' => ' + FileName);
+      Raise_Exception('File has invalid MIDI Header ID.');//#13#10#13#10 + ' => ' + FileName);
 
-    SourceFile.Read(buf, 4);    // Read Header Length (should be $00000006)
+    SourceStream.Read(buf, 4);    // Read Header Length (should be $00000006)
     if (buf[1] <> 0) or (buf[2] <> 0) or (buf[3] <> 0) or (buf[4] <> 6) then
-      Raise_Exception('File has invalid MIDI Header length.'#13#10#13#10 + ' => ' + FileName);
+      Raise_Exception('File has invalid MIDI Header length.');//'#13#10#13#10 + ' => ' + FileName);
 
-    SourceFile.Read(buf, 2);    // Read Format Type ($00 ~ $02)
+    SourceStream.Read(buf, 2);    // Read Format Type ($00 ~ $02)
     Info.Format := buf[1] * 256 + buf[2];
 
-    SourceFile.Read(buf, 2);    // Read number of tracks (1 ~ 65,535)
+    SourceStream.Read(buf, 2);    // Read number of tracks (1 ~ 65,535)
     Info.Tracks := buf[1] * 256 + buf[2];
 
-    SourceFile.Read(buf, 2);    // Read Time Division
+    SourceStream.Read(buf, 2);    // Read Time Division
     Info.TickUnit := buf[1] shr 7;  // Take MSB of buf[1]
     if Info.TickUnit = 0 then   // 0: Ticks per quarter note
       Info.Ticks := buf[1] * 256 + buf[2]
@@ -475,15 +500,15 @@ begin
 
     for I := 0 to (N1 - 1) do
     begin
-      SourceFile.Read(TrackID, 4); // Read Track ID. (should be 'MTrk')
+      SourceStream.Read(TrackID, 4); // Read Track ID. (should be 'MTrk')
       if TrackID <> TRACK_ID then
-        Raise_Exception('File has invalid MIDI Track ID.'#13#10#13#10 + ' => ' + FileName);
+        Raise_Exception('File has invalid MIDI Track ID.');//#13#10#13#10 + ' => ' + FileName);
 
       Elapsed := 0;
       MidiTrack := TMidiTrack.Create;
       Info.TrackList.Add(MidiTrack); // Add to track list
 
-      SourceFile.Read(buf, 4);     // Read Track size
+      SourceStream.Read(buf, 4);     // Read Track size
       TrackDataSize := (buf[1] shl 24) + (buf[2] shl 16) + (buf[3] shl 8) + buf[4];
 
     //  Info.TrackNames[I] := '';
@@ -494,19 +519,19 @@ begin
 
       repeat
         DeltaTime := GetDelta(Len);
-        SourceFile.Read(NextValue, 1);   // Read Status Byte
+        SourceStream.Read(NextValue, 1);   // Read Status Byte
        // Are we continuing a sys ex?  If so, the next value should be $F7
         if (SysExContinue and (NextValue <> $F7)) then
           Raise_Exception(Format('Expected to find a system exclusive continue byte at,'#13#10#13#10 + '%d',
-                                        [SourceFile.Position]));
+                                        [SourceStream.Position]));
        // Are we in running status?  Determine whether we're running and what the current status byte is.
         if ((NextValue and $80) = 0) then
         begin
           if (RunningStatus = 0) then
             Raise_Exception(Format('Status byte required for running status at,'#13#10#13#10 + '%d',
-                                       [SourceFile.Position]));
+                                       [SourceStream.Position]));
        // Keep the last iteration's status byte, and now we're in running mode
-          SourceFile.Position := SourceFile.Position - 1;   // backward to 1 byte.
+          SourceStream.Position := SourceStream.Position - 1;   // backward to 1 byte.
           Status := RunningStatus;
         end else
         begin
@@ -547,12 +572,12 @@ begin
           pEvent1^.Positon := Elapsed;
           if (Status = $F1) or (Status = $F3) then
           begin
-            SourceFile.Read(buf, 1);
+            SourceStream.Read(buf, 1);
             pEvent1^.Data1 := buf[1];
           end else
           if (Status = $F2) then
           begin
-            SourceFile.Read(buf, 2);
+            SourceStream.Read(buf, 2);
             pEvent1^.Data1 := buf[1];
             pEvent1^.Data2 := buf[2];
           end;
@@ -564,7 +589,7 @@ begin
           if DataBytes = 0 then    // ** Added for the case there is no data. (2012-04-16)
             Continue;
           SetLength(str, DataBytes);
-          SourceFile.Read(str[1], DataBytes); // Read data
+          SourceStream.Read(str[1], DataBytes); // Read data
           if (Status = $F0) then
             if (ord(str[DataBytes]) <> $F7) then  // multi-segment Message ?
               SysExContinue := true;
@@ -578,9 +603,9 @@ begin
           pEvent1^.Msg := str;
           MidiTrack.AddEvent(pEvent1);
         end;
-      until EndOfTrack or (SourceFile.Position = (SourceFile.Size - 1));
+      until EndOfTrack or (SourceStream.Position = (SourceStream.Size - 1));
 
-      if SourceFile.Position = (SourceFile.Size - 1) then
+      if SourceStream.Position = (SourceStream.Size - 1) then
         break;
     end;   // end of "for I := 1 to N do"
 
@@ -647,14 +672,32 @@ begin
 
     Result := true;
   finally
-    SourceFile.Free;
+    //SourceStream.Free;
     SetLength(ElapsedTime, 0);
     SetLength(str, 0);
     SetLength(TempoMap, 0);
   end;
-
 end;
 
+(*
+function GetInfo(const FileName: UnicodeString; var Info: TMidiFileInfo): Boolean; overload;
+var
+  SourceStream: TStream;
+begin
+ {$IFNDEF UNICODE}
+  SourceStream := TTntFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+ {$ELSE}
+  SourceStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+ {$ENDIF}
+  try
+    Result := GetInfo(SourceStream, Info);
+
+  finally
+    SourceStream.Free;
+  end;
+
+end;
+(**)
 
 { function ReadMidiFile(const FileName: UnicodeString; var Info: TMidiFile2Info): Boolean;
 begin
@@ -693,7 +736,7 @@ begin
   FTempoList.Clear;
 end;
 
-function TMidiFile2.ReadFromFile(const FileName: WideString): Boolean;
+function TMidiFile2.ReadFromStream(Stream: TStream): Boolean;
 var
   FileInfo: TMidiFileInfo;
   I, N: integer;
@@ -704,7 +747,8 @@ begin
   try
     FileInfo.TrackList := nil;
     FileInfo.TempoList := nil;
-    FIsValid := GetInfo(FileName, FileInfo);
+    //Stream.Position := 0; 
+    FIsValid := GetInfo(Stream, FileInfo);
   except
 
   end;
@@ -754,6 +798,24 @@ begin
     FileInfo.TempoList.Free;
   end;
 end;
+
+function TMidiFile2.ReadFromFile(const FileName: WideString): Boolean;
+var
+  SourceStream: TStream;
+begin
+ {$IFNDEF UNICODE}
+  SourceStream := TTntFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+ {$ELSE}
+  SourceStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+ {$ENDIF}
+  try
+    Result := ReadFromStream(SourceStream);
+
+  finally
+    SourceStream.Free;
+  end;
+end;
+
 
 function TMidiFile2.GetTrack(Index: Integer): TMidiTrack;
 begin
