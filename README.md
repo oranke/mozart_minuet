@@ -8,6 +8,8 @@ http://oranke.tistory.com/265
 
 You can create and play your own Minuet simply.  
 
+![Mozart](./Image/sshot_01.png)
+
 
 All datas and rules are referennced in [here](http://sunsite.univie.ac.at/Mozart/dice/).  
 MIDI Player source comes from [silhwan's blog](http://blog.naver.com/silhwan5125/100181331126).
