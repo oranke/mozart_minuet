@@ -1,5 +1,6 @@
 ﻿unit SelectFrameUnit;
 
+
 interface
 
 uses
@@ -109,7 +110,11 @@ begin
     begin
       Result :=
         Format(
+        {$IFDEF RES_MIDI}
+          'M%d',
+        {$ELSE}
           ExtractFilePath(ParamStr(0)) + 'Data\Minuet\M%d.mid',
+        {$ENDIF}
           [MINUET_TABLE[OrderNo, SelectNo]]
         )
     end;
@@ -118,7 +123,11 @@ begin
     begin
       Result :=
         Format(
+        {$IFDEF RES_MIDI}
+          'T%d',
+        {$ELSE}
           ExtractFilePath(ParamStr(0)) + 'Data\Trio\T%d.mid',
+        {$ENDIF}
           [TRIO_TABLE[OrderNo, SelectNo]]
         )
     end
@@ -134,11 +143,24 @@ var
   i: Integer;
   MidiTrack: TMidiTrack;
   MidiEvent: PMidiEvent;
+
+{$IFDEF RES_MIDI}
+  ResStream: TResourceStream;
+{$ENDIF}  
 begin
   FileName := GetMidiFileName;
-  if not FileExists(FileName) then Exit;
 
+{$IFDEF RES_MIDI}
+  ResStream:= TResourceStream.Create(hInstance, FileName, RT_RCDATA);
+  try
+    MidiFile.ReadFromStream(ResStream);
+  finally
+    ResStream.Free;
+  end;
+{$ELSE}
+  if not FileExists(FileName) then Exit;
   MidiFile.ReadFromFile(FileName);
+{$ENDIF}
 
   MidiTrack := MidiFile.GetTrack(0);
   if not Assigned(MidiTrack) then Exit;

@@ -9,8 +9,10 @@ uses
 
 {$R *.res}
 
-{$R Res_Minuet.RES}
-{$R Res_Trio.RES}
+{$IFDEF RES_MIDI}
+  {$R Res_Minuet.RES}
+  {$R Res_Trio.RES}
+{$ENDIF}
 
 begin
   ReportMemoryLeaksOnShutdown := true;

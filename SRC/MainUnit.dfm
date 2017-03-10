@@ -147,8 +147,6 @@ object MainForm: TMainForm
     ParentCtl3D = False
     TabOrder = 2
     OnResize = ScrollBoxResize
-    ExplicitTop = 97
-    ExplicitHeight = 356
     object MinuetLabel: TLabel
       Left = 4
       Top = 3

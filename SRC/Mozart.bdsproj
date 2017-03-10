@@ -125,7 +125,7 @@
 			<Directories Name="PackageDCPOutputDir"></Directories>
 			<Directories Name="SearchPath">..\LIB;..\LIB\delphizlib.128;..\LIB\MIDI_Component</Directories>
 			<Directories Name="Packages">vcl;rtl;vclx;vclactnband;vclshlctrls;vclie;xmlrtl;inetdbbde;inet;inetdbxpress;webdsnap;dbrtl;vcldb;adortl;bdertl;vcldbx;dbexpress;dsnap;indy;VclSmp;dclOfficeXP;VclNewlyext;TntUnicodeVcl_R70</Directories>
-			<Directories Name="Conditionals"></Directories>
+			<Directories Name="Conditionals">RES_MIDI</Directories>
 			<Directories Name="DebugSourceDirs"></Directories>
 			<Directories Name="UsePackages">False</Directories>
 		</Directories>

@@ -148,9 +148,21 @@ var
   i: Integer;
   MidiTrack: TMidiTrack;
   MidiEvent: PMidiEvent;
+{$IFDEF RES_MIDI}
+  ResStream: TResourceStream;
+{$ENDIF}  
 begin
   // 첫 소절은 편의상 파일을 읽어 구성한다.
+{$IFDEF RES_MIDI}
+  ResStream:= TResourceStream.Create(hInstance, fMinuetSels[0].GetMidiFileName, RT_RCDATA);
+  try
+    MidiFile.ReadFromStream(ResStream);
+  finally
+    ResStream.Free;
+  end;
+{$ELSE}
   MidiFile.ReadFromFile(fMinuetSels[0].GetMidiFileName);
+{$ENDIF}
 
   MidiTrack := MidiFile.GetTrack(0);
   if not Assigned(MidiTrack) then Exit;
@@ -322,12 +334,6 @@ begin
     fTrioSels[i].Left := x * fTrioSels[i].Width;
     fTrioSels[i].Top := y * fTrioSels[i].Height + YPos;
   end;
-
-
-
-  //
-
-//
 end;
 
 procedure TMainForm.tbVolumeChange(Sender: TObject);
